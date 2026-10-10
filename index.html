@@ -217,7 +217,14 @@ loadModel(CONFIG.iconModel,function(model){
   iconG.remove(placeholder);iconG.add(fitModel(model,2.4,false));
 });
 var word3D=new THREE.Group(),word3DMats=[];scene.add(word3D);word3D.visible=false;
+/* stands a flat-exported model upright: the thinnest axis should point at the camera (Z) */
+function orient(name,model){
+  var sz=new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+  if(sz.y<sz.z&&sz.y<sz.x){model.rotation.x=Math.PI/2;dbg(name+': was lying flat, stood it upright');}
+  else if(sz.x<sz.y&&sz.x<sz.z){model.rotation.y=Math.PI/2;dbg(name+': was sideways, turned to face front');}
+}
 loadModel(CONFIG.wordmarkModel,function(model){
+  orient('wordmark.glb',model);
   if(!inspect('wordmark.glb',model).ok){dbg('wordmark.glb: no visible mesh found, keeping text');return;}
   var f=fitModel(model,1,true);word3D.add(f);word3D.userData.ready=true;
   model.traverse(function(o){if(!o.isMesh)return;var arr=Array.isArray(o.material);
