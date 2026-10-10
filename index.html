@@ -197,13 +197,32 @@ function loadModel(url,cb){
     },undefined,function(e){dbg(url+': FAILED '+((e&&e.message)||e));console.warn(url,e)});
   }catch(e){dbg(url+': error '+e.message)}
 }
+/* checks a loaded model: counts meshes, measures size, lightens near-black materials, never culls */
+function inspect(name,model){
+  var box=new THREE.Box3().setFromObject(model),sz=box.getSize(new THREE.Vector3()),meshes=0,tris=0;
+  model.traverse(function(o){
+    if(!o.isMesh)return;meshes++;var gm=o.geometry;
+    tris+=(gm.index?gm.index.count:(gm.attributes.position?gm.attributes.position.count:0))/3;o.frustumCulled=false;
+    (Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){
+      if(!m)return;if(m.envMapIntensity!==undefined)m.envMapIntensity=1.6;
+      if(m.color&&!m.map&&!m.vertexColors){var c=m.color,l=.2126*c.r+.7152*c.g+.0722*c.b;
+        if(l<.04){m.color.set(0x9fb4c8);if('metalness' in m){m.metalness=.9;m.roughness=.25;}dbg(name+': material was almost black, lightened');}}
+      m.needsUpdate=true;});
+  });
+  dbg(name+': meshes='+meshes+' triangles='+Math.round(tris)+' size='+sz.x.toFixed(2)+' x '+sz.y.toFixed(2)+' x '+sz.z.toFixed(2));
+  return{ok:meshes>0&&isFinite(sz.x)&&isFinite(sz.y)&&(sz.x+sz.y)>0};
+}
 loadModel(CONFIG.iconModel,function(model){
+  if(!inspect('icon.glb',model).ok){dbg('icon.glb: no visible mesh found, keeping placeholder');return;}
   iconG.remove(placeholder);iconG.add(fitModel(model,2.4,false));
 });
 var word3D=new THREE.Group(),word3DMats=[];scene.add(word3D);word3D.visible=false;
 loadModel(CONFIG.wordmarkModel,function(model){
+  if(!inspect('wordmark.glb',model).ok){dbg('wordmark.glb: no visible mesh found, keeping text');return;}
   var f=fitModel(model,1,true);word3D.add(f);word3D.userData.ready=true;
-  model.traverse(function(o){if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;word3DMats.push(o.material)}});
+  model.traverse(function(o){if(!o.isMesh)return;var arr=Array.isArray(o.material);
+    var ms=(arr?o.material:[o.material]).map(function(m){var c=m.clone();c.transparent=true;word3DMats.push(c);return c;});
+    o.material=arr?ms:ms[0];});
   $('word').style.display='none';
   wordLayout();sampleModel();
 });
