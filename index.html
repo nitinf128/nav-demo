@@ -132,7 +132,7 @@ var isSmall=innerWidth<800;
   scene.environment=pm.fromScene(env,.02).texture;
   pm.dispose();
 })();
-scene.add(new THREE.DirectionalLight(0xbfefff,1.2)).position.set(3,4,6);
+var keyLight=new THREE.DirectionalLight(0xbfefff,1.2);keyLight.position.set(3,4,6);scene.add(keyLight);
 var rim=new THREE.PointLight(0x22d3ee,18,30);rim.position.set(-4,-2,5);scene.add(rim);
 
 /* ---------- procedural icon (replaced by icon.glb if found) ---------- */
@@ -164,7 +164,7 @@ var ribbon=(function(){
   var pts=[];for(var i=0;i<=120;i++){var t=i/120*Math.PI*2,d=1+Math.sin(t)*Math.sin(t);
     pts.push(new THREE.Vector3(.95*Math.cos(t)/d,-2.35+2.5*Math.sin(t)*Math.cos(t)/d,.35*Math.sin(2*t)));}
   var m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),240,.03,12,true),ribbonMat);
-  scene.add(m);return m;
+  return m; /* ribbon removed: not added to the scene */
 })();
 
 /* ---------- model loading helpers ---------- */
@@ -206,7 +206,7 @@ function inspect(name,model){
     (Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){
       if(!m)return;if(m.envMapIntensity!==undefined)m.envMapIntensity=1.6;
       if(m.color&&!m.map&&!m.vertexColors){var c=m.color,l=.2126*c.r+.7152*c.g+.0722*c.b;
-        if(l<.04){m.color.set(0x9fb4c8);if('metalness' in m){m.metalness=.9;m.roughness=.25;}dbg(name+': material was almost black, lightened');}}
+        if(l<.04){var txt=name.indexOf('word')===0;m.color.set(txt?0xdfeaf0:0xb9c9d6);if('metalness' in m){m.metalness=txt?.55:1;m.roughness=txt?.3:.2;}dbg(name+': material was almost black, lightened');}}
       m.needsUpdate=true;});
   });
   dbg(name+': meshes='+meshes+' triangles='+Math.round(tris)+' size='+sz.x.toFixed(2)+' x '+sz.y.toFixed(2)+' x '+sz.z.toFixed(2));
@@ -276,8 +276,8 @@ function g(){return(Math.random()+Math.random()+Math.random()+Math.random()-2)*1
     var arm=Math.floor(Math.random()*4),rr=1.7+Math.pow(Math.random(),.85)*4.1,th=arm*Math.PI/2+rr*.85+g()*.1;
     sA.set([rr*Math.cos(th)+g()*.05,g()*.14+rr*Math.sin(th)*.3,rr*Math.sin(th)],i*3);
     sRnd.set([Math.random(),Math.random(),Math.random(),Math.random()],i*4);
-    sSize[i]=.035+Math.pow(Math.random(),2.5)*.09+(Math.random()>.97?.12:0);
-    var q=sRnd[i*4+3];tint.setHex(q<.42?pal[0]:(q<.72?pal[1]:(q<.92?pal[2]:pal[3])));shards.setColorAt(i,tint);
+    sSize[i]=.022+Math.pow(Math.random(),2.5)*.06+(Math.random()>.97?.07:0);
+    var q=sRnd[i*4+3];tint.setHex(q<.5?pal[0]:(q<.7?pal[1]:(q<.92?pal[2]:pal[3])));shards.setColorAt(i,tint);
   }
   shards.instanceColor.needsUpdate=true;
 })();
